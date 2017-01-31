@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="maximum-scale=1.0,minimum-scale=1.0,user-scalable=0,width=device-width,initial-scale=1.0"/>
+<title>信呼</title>
+<link rel="stylesheet" type="text/css" href="../css/aui.css" />
+<link rel="stylesheet" type="text/css" href="../css/common.css" />
+<script type="text/javascript" src="../script/jquery.js"></script>
+<script type="text/javascript" src="../script/js.js"></script>
+
+</head>
+<body>
+	<header class="aui-bar aui-bar-nav aui-bar-primary">
+		<a id="header-left" class="aui-pull-left" tapmode onclick="closeWin()">
+			<span class="aui-iconfont aui-icon-left"></span>
+		</a>
+		<div class="aui-title" onclick="reloadclick()" id="aui-header">信呼</div>
+	</header>
+	<div id="mainbody"></div>
+</body>
+
+<script type="text/javascript">
+var num 	= '';
+apiready 	= function () {
+    api.parseTapmode();    	params = api.pageParam;
+	$('#aui-header').html(params.name);
+	num = params.num;
+	loadmode(num);
+}
+function closeWin(){
+	api.closeWin();
+}
+function reloadclick(){
+	location.reload();
+}
+function loadmode(nu){
+	var h = $('header').height();
+	api.openFrame({
+		name: 'win_'+nu+'',
+		url: 'win_'+nu+'.html?rnd='+Math.random()+'',
+		rect: {
+			x: 0,
+			y: 46,
+			w: 'auto',
+			h: 'auto'
+		},
+		pageParam:params,
+		bounces: true,
+		vScrollBarEnabled: false,
+		hScrollBarEnabled: false
+	});
+}
+</script>
+</html>

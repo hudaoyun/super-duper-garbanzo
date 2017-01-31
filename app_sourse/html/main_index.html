@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="maximum-scale=1.0,minimum-scale=1.0,user-scalable=0,width=device-width,initial-scale=1.0"/>
+<title>APP</title>
+<link rel="stylesheet" type="text/css" href="../css/aui.css" />
+<link rel="stylesheet" type="text/css" href="../css/common.css" />
+<script type="text/javascript" src="../script/jquery.js"></script>
+<script type="text/javascript" src="../script/js.js"></script>
+<script type="text/javascript" src="../script/base64-min.js"></script>
+</head>
+<body>
+
+<div class="aui-content">
+	<ul id="main-content" style="display:none" class="aui-user-view"></ul>
+	<div id="notmessdiv" style="padding-top:30%;color:#bbbbbb;display:none" align="center">
+		<div><span  style="font-size:60px" class="aui-iconfont aui-icon-comment"></span></div>
+		<div style="font-size:14px">暂时没有新消息</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+var weizhiy=0;
+function openchat(type,name,uid){
+	js.openchat(type,name,uid,0);
+	$('#stotal_'+type+'_'+uid+'').html('');
+	changestotal();
+}
+apiready = function(){
+	js.ajaxwurbo=true;
+	date = js.now();
+	api.setRefreshHeaderInfo({
+		visible: true,
+		bgColor: '#cccccc',
+		textColor: '#fff',
+		textDown: '下拉刷新',
+		textUp: '松开立即刷新',
+		textLoading: '刷新中...',
+		showTime: false
+	}, function(ret, err){
+		//indexloader();
+		location.reload();
+	});
+	api.addEventListener({
+		name:'longpress'
+	},function(ret, err){
+		bubbleMenushow();
+	});
+	document.addEventListener('touchstart',function(event){
+		weizhiy = event.layerY;
+	},false);
+	dbsite.inits(function(a){
+		loadhistroy();
+		indexloader();
+	},true);
+	
+	api.addEventListener({
+		name: 'main_index'
+	},function(ret, err){
+		var d=ret.value,lx=d.opttype;
+		if(lx=='reloadchat'){
+			$('#main-content').html('');
+			loadhistroy();
+		}
+		if(lx=='createtlz'){
+			createtaolunback(d);
+		}
+		if(lx=='loadrecord')getreadrecoeds();
+		if(lx=='clearlist'){
+			clearlistrecord();
+		}
+	});
+}
+//轮询读取在线信息。
+var indexlunxuntime,loaddt='';
+function indexlunxun(){
+	clearTimeout(indexlunxuntime);
+	indexlunxuntime=setTimeout('indexlunxuns()',10000);
+}
+function indexlunxuns(){
+	js.ajax('index','lunxun',{loaddt:loaddt},function(ret){
+		var a=ret.reimarr;
+		loaddt=ret.loaddt;
+		indexlunxunsshow(a);
+		indexlunxun();
+	},'none',false,function(){
+		indexlunxun();
+	});	
+}
+function indexlunxunsshow(d){
+	var i,len=d.length,a,nums='';
+	for(i=0;i<len;i++){
+		a=d[i];
+		var num = ''+a.type+'_'+a.id+'';
+		nums+=','+num+'';
+		indexloadershow(a, true, true);
+	}
+	if(nums!='')nums=nums.substr(1);
+	if(len>0){
+		getreadrecoeds(nums);
+		changestotal();
+	}
+}
+function loadhistroy(){
+	dbsite.getdata('indexchat','order by `optdt` desc', false,function(ret){
+		var d,i,len=ret.length;
+		if(len>0){
+			for(i=0;i<len;i++){
+				d=ret[i];
+				d.id=d.aid;
+				d.cont=d.content;
+				indexloadershow(d, false);
+			}
+			changestotal();
+		}else{
+			$('#main-content').hide();
+			$('#notmessdiv').show();
+		}
+	});
+}
+function indexloader(){
+	var ntime=js.now('time');
+	js.ajax('index','indexinit',{ntime:ntime},function(ret){
+		js.splittime=parseFloat(ret.splittime);
+		dbsite.setoption('splittime',js.splittime);
+		var a=ret.reimarr,i;
+		loaddt=ret.loaddt;
+		for(i=0;i<a.length;i++){
+			indexloadershow(a[i], true);
+		}
+		changestotal();
+		api.refreshHeaderLoadDone();
+		indexlunxun();
+		getreadrecoed();
+	},'none');
+}
+var maxreid = 0,minreid=999999999;
+function getreadrecoed(){
+	dbsite.getoption('maxreid,minreid', function(a){
+		if(a.maxreid)maxreid=a.maxreid;
+		if(a.minreid)minreid=a.minreid;
+		getreadrecoeds();
+	});
+}
+function getreadrecoeds(srebo){
+	js.ajax('reim','downrecord',{maxid:maxreid,minid:minreid}, function(ret){
+		var i=0,a=ret.rows,len=a.length,d,id,dfs;
+		for(i=0;i<len;i++){
+			d=a[i];id=parseFloat(d.id);
+			dbsite.adddata('record',"and `aid`='"+d.id+"'", true, {
+				'aid':d.id, 'type':d.type, 'zt':d.zt, 'name':d.sendname,
+				'receid':d.receid,'content':d.cont, 'face':d.face,'optdt':d.optdt,
+				'sendid':d.sendid,'fileid':d.fileid
+			});
+			if(d.filers){
+				dfs = d.filers;
+				if(dfs.id)dbsite.adddata('file',"and aid='"+dfs.id+"'", true, {
+					'aid' 	: dfs.id,
+					'thumbpath' 	: dfs.thumbpath, 'filepath' : dfs.filepath,
+					'filesizecn' 	: dfs.filesizecn,
+					'name' : dfs.optname, 'type' : dfs.fileext, 'optdt': dfs.adddt ,'did':dfs.optid,
+					'filename': dfs.filename, 'filesize':dfs.filesize
+				});
+			}
+			if(id>maxreid)maxreid=id;
+			if(id<minreid)minreid=id;
+		}
+		if(len>0){
+			dbsite.setoption('minreid', minreid);
+			dbsite.setoption('maxreid', maxreid);
+			if(srebo){
+				var sar=srebo.split(',');
+				for(i=0;i<sar.length;i++)js.sendevent('loadrecoed', 'chat_'+sar[i]+'');
+			}
+		}
+	},'none');
+}
+function _showconts(nr){
+	var cont = jm.base64decode(nr),len=cont.length,i,olen,zlen=0;
+	var w = $(window).width()-100,wh=parseInt(w/15);
+	for(i = 0;i<len;i++){
+		olen=(cont.charCodeAt(i)>256)?16:8;
+		zlen=zlen + olen;
+		if(zlen>w){
+			cont=cont.substr(0,len-2)+'...'
+			break;
+		}
+	}
+	return cont;
+}
+function indexloadershow(a, inbo, nes){
+	var s='',i,click='';
+	var num = ''+a.type+'_'+a.id+'';
+	$('#list_'+num+'').remove();
+	var stos='';
+	if(a.stotal>0)stos=a.stotal;
+	var os = $('#main-content');
+	os.show();
+	$('#notmessdiv').hide();
+	var ops = a.optdt.substr(11,5);
+	if(a.optdt.indexOf(date)!=0)ops=a.optdt.substr(5,5);
+	if(a.type=='user'||a.type=='group')click="openchat('"+a.type+"','"+a.name+"',"+a.id+")";
+	s='<li ontouchstart="touchobj=this" atype="'+a.type+'" aid="'+a.id+'" id="list_'+num+'" onclick="'+click+'" class="aui-user-view-cell aui-img">';
+	s+='	<img class="aui-img-object aui-pull-left" src="'+a.face+'">';
+	s+='	<div class="aui-img-body">';
+	s+='		<span>'+a.name+' <em style="color:white" id="stotal_'+num+'" class="aui-badge aui-badge-danger">'+stos+'</em></span>';
+	s+='		<p class="aui-ellipsis-2">'+_showconts(a.cont)+'<em style="float:right">'+ops+'</em></p>';
+	s+='	</div>';
+	s+='</li>';
+	if(nes){
+		os.prepend(s);
+	}else{
+		os.append(s);
+	}
+	if(inbo)dbsite.adddata('indexchat',"and `type`='"+a.type+"' and `aid`='"+a.id+"'", false, {
+		'type':a.type,
+		'aid':a.id,
+		'name':a.name,
+		'face':a.face,
+		'optdt':a.optdt,
+		'stotal':a.stotal,
+		'content':a.cont
+	});
+}
+function delxuanlist(){
+	var o = $(touchobj);
+	var type=o.attr('atype'),aid=o.attr('aid');
+	o.remove();
+	var os = $('#main-content');
+	var st=os.text();
+	if(st==''){
+		os.hide();
+		$('#notmessdiv').show();
+	}
+	dbsite.deletedata('indexchat',"and `type`='"+type+"' and `aid`='"+aid+"'", false);
+	js.ajax('reim','delhistory',{type:type,gid:aid},false,'none');
+}
+function changestotal(){
+	var o= $("em[id^='stotal_']");
+	var oi=0,i,len=o.length,te;
+	for(i=0;i<len;i++){
+		te=$(o[i]).text();
+		if(te)oi=oi+parseFloat(te);
+	}
+	js.sendevent('hometotal','',{stotal:oi});
+	return oi;
+}
+function bubbleMenushow(){
+	if(weizhiy==0)return;
+	js.showmenu({
+		data:[{name:'删除',lx:0},{name:'取消',lx:1}],
+		width:150,
+		onclick:function(d){
+			if(d.lx==0)delxuanlist();
+			weizhiy=0;
+		},
+		oncancel:function(){
+			weizhiy=0;
+		}
+	});
+}
+function createtaolunback(d){
+	d.cont=jm.base64encode('新创建');
+	d.stotal='0';
+	d.face='images/group.png';
+	d.optdt=d.createdt;
+	indexloadershow(d, true);
+}
+function clearlistrecord(){
+	dbsite.deletedata('indexchat','', false);
+	$('#main-content').html('');
+	$('#main-content').hide();
+	$('#notmessdiv').show();
+	changestotal();
+	js.ajax('reim','delhistory',{type:'all',gid:0},false,'none');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+html,body{
+	height: 100%;
+	width:100%;
+}
+.iscrollmain,#iscrollmain{width:100%;position:fixed;z-index:1;top:0px; bottom:0px; overflow:hidden}
+.iscrollbody{
+	position: absolute;z-index:1;width:100%;top:0px;-webkit-tap-highlight-color: rgba(0,0,0,0);
+	width: 100%;
+	-webkit-transform: translateZ(0);
+	-moz-transform: translateZ(0);
+	-ms-transform: translateZ(0);
+	-o-transform: translateZ(0);
+	transform: translateZ(0);
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	-webkit-text-size-adjust: none;
+	-moz-text-size-adjust: none;
+	-ms-text-size-adjust: none;
+	-o-text-size-adjust: none;
+	text-size-adjust: none;
+}
+.loadcls{font-size:12px;text-align:center;height:50px;overflow:hidden;line-height:48px;color:#666666}
+
+.blank1{ height:1px; overflow:hidden; border-bottom:1px #dddddd solid}
+.blank10{ height:10px; overflow:hidden;width:100%}
+.blank5{ height:5px; overflow:hidden;width:100%}
+.blank15{ height:15px;overflow:hidden;width:100%}
+.blank20{ height:20px;overflow:hidden;width:100%}
+.blank25{ height:25px;overflow:hidden;width:100%}
+.blank30{ height:30px;  overflow:hidden;width:100%}
+
+.jquery-calendar .tdtext:hover{background-color:#f5f5f5}
+.jquery-calendar .thtext{border:0px #eeeeee solid;background-color:#f1f1f1;height:34px}
