@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="maximum-scale=1.0,minimum-scale=1.0,user-scalable=0,width=device-width,initial-scale=1.0"/>
+<title>虎啸</title>
+<link rel="stylesheet" type="text/css" href="../css/aui.css" />
+<link rel="stylesheet" type="text/css" href="../css/common.css" />
+<script type="text/javascript" src="../script/jquery.js"></script>
+<script type="text/javascript" src="../script/js.js"></script>
+<style>
+.menus{height:50px;overflow:hidden;line-height:49px; position:relative}
+.menus .tsqpo{position:absolute;top:3px;left:5%}
+.menus:active{background-color:#f1f1f1}
+.menus-footer{background-color:white;height:50px;overflow:hidden;position:fixed;bottom:0px;width:100%}
+</style>
+</head>
+<body onunload="bodyunload()">
+	
+	<header class="aui-bar aui-bar-nav aui-bar-primary">
+		<a id="header-left" class="aui-pull-left" tapmode onclick="closeWin()">
+			<span class="aui-iconfont aui-icon-left"></span>
+		</a>
+		<div class="aui-title" onclick="reloadclick()" id="aui-header">虎啸</div>
+		<a id="header_right" onclick="searchsoso()" class="aui-pull-right">
+			<span class="aui-iconfont aui-icon-search"></span>
+		</a>
+	</header>
+	<div class="menus-footer aui-border-t" id="footermenus">
+		<div class="aui-col-xs-12">
+			<div class="menus" align="center">全部数据</div>
+		</div>
+	</div>
+</body>
+
+<script type="text/javascript">
+var num 	= '',agents={},agentsmenu=[];
+apiready 	= function () {
+    api.parseTapmode();    
+	params = api.pageParam;
+	$('#aui-header').html(params.name);
+	num = params.num;
+	loadmode(num);
+	dbsite.inits();
+	api.addEventListener({
+		name: 'yingyong_'+num+''
+	},function(ret, err){
+		eventback(ret.value);
+	});
+	
+	api.getPrefs({
+		key: 'agentjson'
+	}, function(ret, err){
+		if(ret){
+			var val=ret.value;
+			if(val!=''){
+				var a=js.decode(val);
+				var len=a.length,i,slen,j,a1,a2;
+				for(i=0;i<len;i++){
+					a1=a[i];
+					if(a1.num==num){agents=a1;initagents();return;}
+					slen=a1.subagent.length;
+					for(j=0;j<slen;j++){
+						a2=a1.subagent[j];
+						if(a2.num==num){agents=a2;initagents();return;}
+					}
+				}
+			}
+		}
+	});
+}
+function initagents(){
+	var a = agents.menu;
+	if(a.length==0)a=[{name:'全部数据',type:0,url:'all'}];
+	agentsmenu=a;
+	var i,len=a.length,s='',cls1='',cls2='',oi=0,slen;
+	for(i=0;i<len;i++){
+		oi++;
+		cls1='aui-col-xs-4';
+		cls2=' aui-border-r';
+		if(len==1){
+			cls1='aui-col-xs-12';
+		}
+		if(len==2){
+			cls1='aui-col-xs-6';
+		}
+		if(oi==len)cls2='';
+		slen=a[i].submenu.length;
+		s+='<div class="'+cls1+'" onclick="clickmenu('+i+','+len+')">';
+		s+='	<div class="menus'+cls2+'" align="center">';
+		if(a[i].num)s+='	<span id="'+a[i].num+'_stotal" class="tsqpo aui-badge aui-badge-danger"></span>';
+		if(slen>0)s+='<i class="aui-iconfont aui-icon-sort"></i>';
+		s+='		'+a[i].name+'';
+		s+='	</div>';
+		s+='</div>';
+	}
+	$('#footermenus').html(s);
+}
+function clickmenu(oi,len){
+	var a=agentsmenu[oi],slen=a.submenu.length;
+	if(slen>0){
+		a.oi=oi;
+		a.len=len;
+		js.sendevent('submenu','yingyong_mode_'+num+'', a);
+		return;
+	}
+	js.sendevent('event','yingyong_mode_'+num+'',a);
+}
+//搜索发送
+var soukey = '';
+function searchsoso(){
+	api.prompt({
+		title:'搜索',
+		msg:'请输入搜索关键词：',
+		text:soukey,
+		buttons: ['确定', '取消']
+	}, function(ret, err) {
+		var index = ret.buttonIndex;
+		var text = ret.text;
+		if(index==1){
+			js.sendevent('search','yingyong_mode_'+num+'', {key:text});
+			soukey = text;
+		}
+	});
+}
+function eventback(d){
+	var lx=d.opttype;
+	if(lx=='changetitle')$('#aui-header').html(d.title);
+	if(lx=='changetotal'){
+		var d1,v,s,o1;
+		for(d1 in d){
+			v=d[d1];
+			if(v==0)v='';
+			o1= $('#'+d1+'_stotal');
+			if(o1){
+				o1.html(v);
+				if(v==''){
+					o1.hide();
+				}else{
+					o1.show();
+				}
+			}
+		}
+	}
+}
+function closeWin(){
+	api.closeWin();
+}
+function reloadclick(){
+	location.reload();
+}
+function bodyunload(){
+	api.closeFrame({
+		name: 'yingyong_mode_'+num+''
+	});
+}
+function loadmode(nu){
+	api.openFrame({
+		name: 'yingyong_mode_'+nu+'',
+		url: 'yingyong_cont.html',
+		rect: {
+			x: 0,
+			y: 46,
+			w: 'auto',
+			h: api.frameHeight-96
+		},
+		pageParam:params,
+		bounces: true,
+		vScrollBarEnabled: true,
+		hScrollBarEnabled: false
+	});
+}
+function showmenus(){
+	
+}
+</script>
+</html>

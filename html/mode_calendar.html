@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="maximum-scale=1.0,minimum-scale=1.0,user-scalable=0,width=device-width,initial-scale=1.0"/>
+<title>万年历</title>
+<link rel="stylesheet" type="text/css" href="../css/aui.css" />
+<link rel="stylesheet" type="text/css" href="../css/common.css" />
+<script type="text/javascript" src="../script/jquery.js"></script>
+</head>
+<body>
+
+<div class="aui-content" >
+	
+</div>
+	
+	
+</body>
+<script type="text/javascript">
+apiready = function(){
+var UICalendar = api.require('UICalendar');
+UICalendar.open({
+    rect: {
+        x: 0,
+        y: 46,
+        w: api.frameWidth,
+        h: api.frameHeight
+    },
+    styles: {
+        bg: 'rgba(0,0,0,0)',
+        week: {
+            weekdayColor: '#3b3b3b',
+            weekendColor: '#a8d400',
+            size: 12
+        },
+        date: {
+            color: '#3b3b3b',
+            selectedColor: '#fff',
+            selectedBg: '#a8d500',
+            size: 12
+        },
+        today: {
+            color: 'rgb(230,46,37)',
+            bg: ''
+        },
+        specialDate: {
+            color: '#a8d500',
+            bg: ''
+        }
+    },
+    specialDate: [{
+        date: '2015-06-01'
+    }],
+    switchMode: 'vertical',
+    fixedOn: api.frameName,
+    fixed: false
+}, function(ret, err){
+    if( ret ){
+        // alert( JSON.stringify( ret ) );
+    }else{
+        // alert( JSON.stringify( err ) );
+    }
+});	
+}
+</script>
+</html>

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="maximum-scale=1.0,minimum-scale=1.0,user-scalable=0,width=device-width,initial-scale=1.0"/>
+<title>APP</title>
+<link rel="stylesheet" type="text/css" href="../css/aui.css" />
+<link rel="stylesheet" type="text/css" href="../css/common.css" />
+<script type="text/javascript" src="../script/jquery.js"></script>
+<script type="text/javascript" src="../script/js.js"></script>
+
+</head>
+<body>
+	<div class="blank10"></div>
+	<div class="aui-content">
+		<ul class="aui-user-view">
+			<li onclick="c.changeface()" class="aui-user-view-cell aui-img">
+				<img class="aui-img-object aui-pull-left" id="myface" src="images/noface.png">
+				<div class="aui-img-body">
+					<span id="mytitlt">管理员</span>
+					<p class="aui-ellipsis-1" id="mytitlts">部门:开发部&nbsp; 帐号:admin</p>
+				</div>
+			</li>
+		</ul>
+	</div>
+	
+    <div class="aui-content">
+        <ul class="aui-list-view">
+			<li onclick="js.openwins('相关文件','recefile')" class="aui-list-view-cell">
+                <a class="aui-arrow-right">相关文件</a>
+            </li>
+			<li class="aui-list-view-cell aui-switch-body">
+                <div class="aui-switch-title">消息提醒</div>
+                <input type="checkbox" onclick="c.changetixin(this)" id="issound" class="aui-switch aui-pull-right">
+            </li>
+        </ul>
+    </div>
+	
+	<div class="aui-content">
+        <ul class="aui-user-view">
+			<li onclick="c.clearcache()" class="aui-user-view-cell">
+				清除缓存
+            </li>
+			<li onclick="c.clearss(0)" class="aui-user-view-cell">
+				清除会话列表
+            </li>
+			<li onclick="c.clearss(1)" class="aui-user-view-cell">
+				清除本地聊天记录
+            </li>
+        </ul>
+    </div>
+	
+	<div class="aui-content">
+        <ul class="aui-user-view">
+			<li onclick="location.reload()" class="aui-user-view-cell" id="appversion">
+                检查更新
+            </li>
+			<li onclick="c.shate()" class="aui-user-view-cell">
+				分享...
+            </li><!--
+            <li onclick="c.fankuai()" class="aui-user-view-cell">
+                <a class="aui-arrow-right">建议反馈</a>
+            </li>-->
+        </ul>
+    </div>
+	
+	
+	
+	<div class="aui-content">
+		<ul class="aui-user-view">
+			<li class="aui-user-view-cell" onclick="loginexit(false)" align="center">
+				退出帐号
+			</li>
+		</ul>
+	</div>
+	<div class="blank5"></div>	
+</body>
+<script type="text/javascript">
+apiready = function(){
+	dbsite.inits(function(){
+		c.inits();
+	});
+	$('#appversion').html('检查更新V'+api.appVersion+' <span class="aui-badge aui-badge-danger"></span>');
+}
+function loginexit(bo){
+	if(!bo){
+		api.confirm({
+			title: '系统提示',
+			msg: '确定要退出吗？',
+			buttons: ['确定', '取消']
+		}, function(ret, err){
+			if(ret.buttonIndex==1)loginexit(true);
+		});
+		return;
+	}
+	js.ajax('login','loginexit',{},function(){
+		loginexitok();
+	},'wait',false,function(){
+		loginexitok();
+	});
+}
+function loginexitok(){
+	dbsite.setoption('adminoldid',adminid);
+	dbsite.setoption('adminid','');
+	js.sendevent('exit');
+}
+var c={
+	inits:function(){
+		get('myface').src=adminface;
+		$('#mytitlt').html(adminname);
+		$('#mytitlts').html('部门:'+userinfo.deptname+'&nbsp; 职位:'+userinfo.ranking+'&nbsp; 帐号:'+userinfo.user+'');
+		get('issound').checked=(userinfo.apptx=='1');
+	},
+	clearcache:function(){
+		api.clearCache(function(){
+			api.toast({msg:'清除完成'});
+		});
+	},
+	changetixin:function(o){
+		var lx= o.checked?'1':'0';
+		userinfo.apptx = lx;
+		dbsite.setoption('userinfo', JSON.stringify(userinfo));
+		js.ajax('index','changetx',{apptx:lx},false,'none');
+	},
+	changeface:function(){
+		api.confirm({
+			title: '头像修改',
+			msg: '请选择图片来修改头像',
+			buttons: ['本地图片','拍照', '取消']
+		}, function(ret, err){
+			if(ret){
+				var btns=ret.buttonIndex;
+				if(btns==1){
+					apigetPicture('pic');
+				}
+				if(btns==2){
+					apigetPicture('camera');
+				}
+			}
+		});
+	},
+	uploadface:function(rets){
+		var path=rets.data;
+		api.showProgress({title: '上传中...',text: '',modal: true});
+		api.ajax({
+			url: js.apiurl('upload','upfile'),
+			method: 'post',
+			timeout: 60,
+			dataType: 'json',
+			returnAll: false,
+			data: {files:{file:path}}
+		},function(ret,err){
+			js.ajax('reim','changeface',{id:ret.id},function(tx){
+				api.hideProgress();
+				var face = ''+apiurl+''+tx+'';
+				get('myface').src=face+'?'+Math.random()+'';
+				userinfo.face = face;
+				dbsite.setoption('userinfo', JSON.stringify(userinfo));
+				js.sendevent('changeface', '',{face:face});
+			},'none');
+		});
+	
+	},
+	fankuai:function(){
+		js.openwin('建议反馈','http://hudaoyun.com/fankui.html');
+	},
+	shate:function(){
+		var sharedModule = api.require('shareAction');
+		sharedModule.share({
+			text: "虎啸，一款开源办公系统。\n官网地址：http://www.hudaoyun.com/",
+			type: 'text'
+		});
+	},
+	clearss:function(lx){
+		api.toast({msg:'清除完成'});
+		if(lx==0)js.sendevent('clearlist', 'main_index');
+		if(lx==1){
+			dbsite.deletedata('record','',true);
+		}
+	}
+};
+function apigetPicture(lx){
+	api.getPicture({
+		sourceType: lx,
+		encodingType: 'jpg',
+		mediaValue: 'pic',
+		destinationType: '',
+		allowEdit: true,
+		quality: 90,
+		targetWidth: 800,
+		saveToPhotoAlbum: false
+	}, function(ret, err){ 
+		if(ret){
+			if(ret.data)c.uploadface(ret);
+		}
+	});
+}
+</script>
+</html>

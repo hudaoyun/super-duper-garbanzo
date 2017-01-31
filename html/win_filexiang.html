@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="maximum-scale=1.0,minimum-scale=1.0,user-scalable=0,width=device-width,initial-scale=1.0"/>
+<title>虎啸</title>
+<link rel="stylesheet" type="text/css" href="../css/aui.css" />
+<link rel="stylesheet" type="text/css" href="../css/common.css" />
+<script type="text/javascript" src="../script/jquery.js"></script>
+<script type="text/javascript" src="../script/js.js"></script>
+<script type="text/javascript" src="../script/jsdownfile.js"></script>
+</head>
+<body>
+	
+	<div align="center" style="padding-top:25%">
+		<div style="background-color:#F97D2A;color:white;overflow:hidden;height:70px;width:70px;border-radius:10px;line-height:70px;text-align:center;font-size:22px" id="fileext">doc</div>
+	</div>
+	<div align="center" style="padding:30px 10px 0px 10px" id="filename"></div>
+	<div style="line-height:25px;color:#888888;padding-left:100px;padding-top:30px;font-size:14px" id="fileinfor"></div>
+	
+	<div align="center" style="padding-top:20px" id="butntext">
+		
+	</div>
+	
+	<div align="center" style="padding:10px" id="paths"></div>
+	
+	<div style="margin:10px;padding-top:20px;display:none" id="downlssss">
+		<div class="aui-progress aui-progress-xs">
+			<div class="aui-progress-bar aui-progress-primary"  id="downlsssss" style="width: 0%;"></div>
+		</div>
+	</div>
+	
+</body>
+
+<script type="text/javascript">
+var touchobj=false;
+apiready 	= function () {
+    api.parseTapmode();    
+	params = api.pageParam;
+	fileid = params.fid;
+	dbsite.inits(function(a){
+		c.init();
+	});
+	
+	api.setFrameAttr({
+		bounces: false
+	});
+}
+var c={
+	init:function(){
+		js.fsobj= api.require('fs');
+		dbsite.getdata('file', "and aid='"+fileid+"'", true,function(ret){
+			var a=ret[0];
+			js.filers[fileid] = a;
+			$('#filename').html(a.filename);
+			$('#fileext').html(a.type);
+			$('#fileinfor').html('发送者：'+a.name+'<br>大小：'+a.filesizecn+'<br>时间：'+a.optdt+'');
+			
+			var savePath= 'fs://download/'+fileid+'_'+a.filename+'';
+			
+			js.fsobj.exist({
+				path:savePath
+			},function(ret){
+				var s='';
+				if(!ret.exist){
+					s='<div onclick="c.downfiles()" class="aui-btn aui-btn-danger">未下载,点击下载</div>';
+				}else{
+					s='<div onclick="c.openfiles()" class="aui-btn aui-btn-success">已下载,点击打开</div>';
+				}
+				$('#butntext').html(s);
+			});
+			
+		});
+	},
+	downfiles:function(lxb){
+		var a		= js.filers[fileid];
+		var filesize= a.stotal;
+		if(filesize>1*1024*1024 && !lxb){
+			api.confirm({
+			title: '系统提示',
+				msg: '当前文件：'+a.filesizecn+'，超过1M，确定是使用wifi下载，以免浪费您流量，是否继续下载？',
+				buttons: ['确定', '取消']
+			}, function(ret, err){
+				if(ret.buttonIndex==1)c.downfiles(true);
+			});
+			return;
+		}
+		var url 	= apiurl+a.filepath;
+		if(a.filepath.indexOf('.uptemp')>0)url=js.apiurl('reim','downfile')+'&id='+fileid+'';
+		var savePath= 'fs://download/'+fileid+'_'+a.filename+'';
+		var fid = fileid;
+		api.showProgress({
+			style: 'default',
+			animationType: 'fade',
+			title: '下载中...',
+			text: '大小:'+a.filesizecn+'',
+			modal: true
+		});
+		$('#downlssss').show();
+		api.download({
+			url: url,
+			savePath: savePath,
+			report: true,
+			cache: true,
+			allowResume: true
+		},function(ret, err){
+			$('#downlsssss').css('width',''+ret.percent+'%');
+			if(ret.state == 1){
+				$('#downlssss').hide();
+				api.hideProgress();
+				var sav = ret.savePath;
+				js.filers[fid].path = sav;
+				$('#stats_'+fid+'').html('已下载');
+				dbsite.updatedata('file',"and `aid`="+fid+"",true,"`face`='"+sav+"'");
+				$('#butntext').html('<div onclick="c.openfiles()" class="aui-btn aui-btn-success">已下载,点击打开</div>');
+			}else if(ret.state==2){
+				js.getarr(err);
+				$('#downlssss').hide();
+				api.hideProgress();
+			}
+		});	
+	},
+	readtype:',js,php,asp,html,shtml,htm,sql,config,txt,java,vbs,',
+	openfiles:function(){
+		var a		= js.filers[fileid];
+		var savePath= 'fs://download/'+fileid+'_'+a.filename+'';
+		var cans = {
+			path:savePath
+		};
+		var isopen = this.readtype.indexOf(','+a.type+',')>-1;
+		if(a.stotal>50*1024)isopen=false;
+		if(isopen)cans.flags='read_write';
+		js.fsobj.open(cans,function(ret){
+			var fd = ret.fd;
+			$('#paths').html('本地路径：<br>'+fd+'');
+			if(!isopen){
+				alert('请使用第三方工具在路径\n\n'+fd+'\n\n下打开！');
+			}else{
+				js.fsobj.read({
+					fd: fd,
+					offset: 0,
+					length: 0,
+					codingType:'utf8'
+				}, function(ret, err){        
+					if( ret.status ){
+						alert(ret.data);
+					}else{
+						alert('打开失败');
+					}
+				});
+			}
+		});
+	}
+};
+</script>
+</html>

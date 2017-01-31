@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="maximum-scale=1.0,minimum-scale=1.0,user-scalable=0,width=device-width,initial-scale=1.0"/>
+<title>APP</title>
+<link rel="stylesheet" type="text/css" href="../css/aui.css" />
+<link rel="stylesheet" type="text/css" href="../css/common.css" />
+<link rel="stylesheet" type="text/css" href="../css/chat.css" />
+<script type="text/javascript" src="../script/jquery.js"></script>
+<script type="text/javascript" src="../script/js.js"></script>
+<script type="text/javascript" src="../script/base64-min.js"></script>
+<script type="text/javascript" src="../script/strformat.js"></script>
+<style>
+.wfwewew{height:40px;width:40px}
+.imgshow td{width:25%;text-align:center;padding:10px 0px}
+.imgshow span{color:#888888;font-size:14px}
+</style>
+</head>
+<body>
+<div>
+	<div class="blank10"></div>
+	<div class="aui-content imgshow" style="background:white">
+		<div id="showlist"></div>
+		<ul class="aui-list-view">
+			<li class="aui-list-view-cell" id="showlists">共0人</li>
+			<li id="yaodiv" style="display:none" onclick="c.yaoqing()" class="aui-list-view-cell">
+				<a class="aui-arrow-right">＋邀请其他人员</a>
+			</li>
+		</ul>
+	</div>
+	<div class="aui-content">
+		<ul class="aui-list-view">
+			<li id="yaodiv1" style="display:none" class="aui-list-view-cell">
+				名称<span class="aui-badge" id="showlistname" style="background:none"></span>
+			</li>
+			<li onclick="c.clearjilu(0)" class="aui-list-view-cell">
+				<a class="aui-arrow-right">清空本地聊天记录</a>
+			</li>
+			<li onclick="c.clearjilu(1)" class="aui-list-view-cell">
+				<a class="aui-arrow-right">清空服务器聊天记录</a>
+			</li>
+		</ul>
+	</div>
+	<div class="aui-content" onclick="c.exitchat()" id="exitbtn" style="margin:0px 10px;display:none">
+		<div class="aui-btn aui-btn-danger" style="width:100%;line-height:30px">退出会话</div>
+	</div>
+</div>
+</body>
+<script type="text/javascript">
+apiready 	= function () {
+    api.parseTapmode(); 
+	params = api.pageParam;
+	
+	api.setRefreshHeaderInfo({
+		visible: true,
+		bgColor: '#cccccc',
+		textColor: '#fff',
+		textDown: '下拉刷新',
+		textUp: '松开立即刷新',
+		textLoading: '刷新中...',
+		showTime: false
+	}, function(ret, err){
+		location.reload();
+	});
+	api.refreshHeaderLoadDone();
+	paramstype = params.type;
+	receiveid	= params.uid;
+	if(params.type=='group'){
+		$('#yaodiv').show();
+		$('#yaodiv1').show();
+		$('#exitbtn').show();
+	}
+	
+	dbsite.inits(function(){
+		c.initdata();
+	});
+	$('#showlistname').html(params.name);
+	
+	api.addEventListener({
+		name: 'chatuser'+params.num+''
+	},function(ret, err){
+		c.eventshow(ret.value);
+	});
+}
+var c={
+	initdata:function(){
+		js.ajax('reim','getgroupuser',{type:params.type,gid:params.uid},function(ret){
+			var a=ret.uarr;
+			var len=a.length,i;
+			var s='<table width="100%"><tr>';
+			for(i=0;i<len;i++){
+				s+='<td width="25%"><img class="wfwewew" src="'+a[i].face+'"><br><span>'+a[i].name+'</span></td>';
+				if((i+1)%4==0)s+='</tr><tr>';
+			}
+			s+='</tr></table>';
+			$('#showlist').html(s);
+			$('#showlists').html('共'+len+'人');
+		});
+	},
+	exitchat:function(bo){
+		if(!bo){
+			api.confirm({
+				title: '系统提示',
+				msg: '确定要退出['+params.name+']会话吗？',
+				buttons: ['确定', '取消']
+			}, function(ret, err){
+				if(ret.buttonIndex==1)c.exitchat(true);
+			});
+			return;
+		}
+		js.ajax('reim','exitgroup',{type:params.type,gid:params.uid},function(){
+			dbsite.deletedata('indexchat',"and `type`='"+params.type+"' and `aid`='"+params.uid+"'", false,function(){
+				js.sendevent('exit','chat_'+params.num+'');
+				js.sendevent('reloadchat', 'main_index');
+				api.closeWin();
+			});
+		},'wait');
+	},
+	clearjilu:function(lx){
+		var ss='本地';
+		if(lx==1)ss='服务器上';
+		api.confirm({
+			title: '系统提示',
+			msg: '确定要清空['+params.name+']会话的'+ss+'聊天记录吗？',
+			buttons: ['确定', '取消']
+		}, function(ret, err){
+			if(ret.buttonIndex==1)c.clearjiluok(lx);
+		});
+	},
+	clearjiluok:function(lx){
+		if(lx==0){
+			var where=" and `did`='"+receiveid+"'";
+			if(paramstype=='user')where='and ( (`sort`='+adminid+' and `did`='+receiveid+') or (`sort`='+receiveid+' and `did`='+adminid+'))';
+			dbsite.deletedata('record',"and `type`='"+paramstype+"' "+where+"",true, function(){
+				api.toast({msg:'本地记录已清空'});
+			});
+		}
+		if(lx==1){
+			js.ajax('reim','clearrecord',{type:paramstype,gid:receiveid},function(ret){
+				api.toast({msg:'服务器聊天记录已清空'});
+			});
+		}
+	},
+	yaoqing:function(){
+		js.openwin('邀请', 'dept',{'stype':'1','event':'chatuser'+params.num+'','changetype':'checkuser'});
+	},
+	eventshow:function(d){
+		if(d.nameid){
+			js.ajax('reim','yaoqinguid',{val:d.nameid,gid:receiveid},function(da){
+				if(da.indexOf('success')==0){
+					var uids = da.replace('success','');
+					js.msg('success','邀请成功');
+					location.reload();
+					if(uids != ''){
+					}
+				}else{
+					js.msg('msg',da);
+				}
+			});
+		}
+	}
+};
+</script>
+</html>

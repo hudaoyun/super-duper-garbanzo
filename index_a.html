@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="maximum-scale=1.0,minimum-scale=1.0,user-scalable=0,width=device-width,initial-scale=1.0"/>
+<title>虎啸</title>
+<link rel="stylesheet" type="text/css" href="./css/aui.css" />
+<script type="text/javascript" src="./script/jquery.js"></script>
+<script type="text/javascript" src="./script/js.js"></script>
+<script type="text/javascript" src="./script/base64-min.js"></script>
+<style>
+#hometotal{position:absolute;bottom:35px;left:10px;z-index:1;display:none}
+#yingtotal{position:absolute;bottom:35px;left:30%;z-index:1;display:none}
+</style>
+</head>
+<body onunload="bodyunload()">
+	<header class="aui-bar aui-bar-nav aui-bar-primary">
+		<a id="header_left" style="display:none" onclick="searchindex()" class="aui-pull-left">
+			<div style="margin-top:8px;height:28px;overflow:hidden;border-radius:14px"><img id="myface" src="images/noface.png" height="28" width="28"></div>
+		</a>
+		<div class="aui-title" onclick="indexrelod()" id="aui-header">虎啸</div>
+		<a id="header_right" style="display:none" onclick="addindex()"  class="aui-pull-right">
+			<span class="aui-iconfont aui-icon-add1"></span>
+		</a>
+	</header>
+
+
+	<div id="logindiv" style="display:none">
+		<div class="aui-card" style="margin-top:30px;">       
+			<div class="aui-form">
+				
+				<div class="aui-input-row">
+					<span class="aui-input-addon">&nbsp;帐号</span>
+					<input ontouchstart="touchobj=this" type="text" id="user" class="aui-input" value="" placeholder="请输入帐号"/>
+				</div>
+
+				<div class="aui-input-row">
+					<span class="aui-input-addon">&nbsp;密码</span>
+					<input ontouchstart="touchobj=this" type="password" id="pass" class="aui-input" value="" placeholder="请输入密码"/>
+				</div>
+				
+				<div class="aui-btn-row">
+					<div class="aui-btn aui-btn-block aui-btn-primary" onClick="logincheck(this)" >登 录</div>
+				</div>
+			</div>
+		</div>
+		<p class="aui-text-center"></p>
+	</div>
+	
+	
+
+	<footer style="display:none" class="aui-nav">
+		<span id="hometotal" class="aui-badge aui-badge-danger"></span>
+		<span id="yingtotal" class="aui-badge aui-badge-danger"></span>
+		<ul class="aui-bar-tab" style="border-top:1px #cccccc solid">
+			<li class="active-primary" id="tabbar0" onclick="changetabs(0)">
+				<span class="aui-iconfont aui-icon-comment"></span>
+				<p>会话</p>
+			</li>
+			<li id="tabbar1" onclick="changetabs(1)">
+				<span class="aui-iconfont aui-icon-apps"></span>
+				<p>应用</p>
+			</li>
+			<li id="tabbar2" onclick="changetabs(2)">
+				<span class="aui-iconfont aui-icon-addressbook"></span>
+				<p>联系人</p>
+			</li>
+			<li id="tabbar3" onclick="changetabs(3)">
+				<span class="aui-iconfont aui-icon-my"></span>
+				<p>我</p>
+			</li>
+		</ul>
+	</footer>
+</body>
+<script type="text/javascript">
+var touchobj=false;
+indexrelod=function(){
+	location.reload();
+}
+function bodyunload(){
+	api.closeFrameGroup({
+		name: 'main'
+	});
+}
+function initindex(){
+	if(adminid=='' || adminid=='0'){
+		$('#logindiv').show();
+		$('#logindiv').show();
+		$('#search').hide();
+		$('footer').hide();
+		$('#header_left').hide();
+		$('#header_right').hide();
+		tencentPushremove();
+	}else{
+		$('#logindiv').hide();
+		$('#search').show();
+		$('footer').show();
+		$('#header_left').show();
+		$('#header_right').show();
+		opengroup();
+		tencentPushadd();
+	}	
+}
+function eventback(d){
+	var typ=d.opttype;
+	if(typ=='exit'){
+		adminid='';
+		token='';
+		dbsite.setoption('token','');
+		initindex();
+		bodyunload();
+		$('#aui-header').html(getsystitle());
+	}
+	if(typ=='hometotal'){
+		changetotal('hometotal',d.stotal);
+	}
+	if(typ=='yingtotal'){
+		changetotal('yingtotal',d.stotal);
+	}
+	if(typ=='changeface'){
+		get('myface').src=d.face;
+	}
+}
+function changetotal(na, va){
+	var o=$('#'+na+'');
+	o.html(va+'');
+	if(!va||va=='0'){
+		o.hide();
+	}else{
+		o.show();
+	}
+}
+apiready = function(){
+	api.setStatusBarStyle({
+		style: 'light'
+	});
+	$('#aui-header').html(getsystitle());
+	api.removeLaunchView({animation: {type: 'fade',duration: 500}});
+	api.parseTapmode();
+	dbsite.init(function(a){
+		if(!apiurl)apiurl=js.getoption('apiurl');
+		var s=location.href;
+		if(!apiurl&&s.indexOf('192.168')>-1)apiurl='http://192.168.1.103/app/xinhu/';
+		if(apiurl)$('#url').val(apiurl);
+		if(a.userinfo){
+			var d=js.decode(a.userinfo);
+			$('#user').val(d.user);
+			if(d.user)$('#pass').val(jm.base64decode(js.getoption('pass')));
+			get('myface').src=d.face;
+		}
+		initindex();
+	});
+	api.addEventListener({
+		name: 'xinhuhome'
+	},function(ret, err){
+		eventback(ret.value);
+	});
+	clipBoard = api.require('clipBoard');
+	api.addEventListener({
+		name:'longpress'
+	},function(ret, err){
+		longpressshow();
+	});
+}
+function getsystitle(){
+	var tits=js.getoption('systitle');
+	if(!tits)tits='信呼';
+	return tits;
+}
+function longpressshow(){
+	if(!touchobj)return;
+	
+	js.showmenu({
+		data:[{name:'粘贴',lx:0},{name:'复制',lx:1},{name:'清空',lx:2},{name:'取消',lx:3}],
+		width:150,
+		onclick:function(d){
+			touchobjs = touchobj;
+			if(d.lx==0){
+				clipBoard.get(function( ret, err ){
+					if(ret)touchobjs.value=ret.value;
+				});
+			}
+			if(d.lx==1){
+				clipBoard.set({value: touchobj.value});
+			}
+			if(d.lx==2){
+				touchobj.value='';
+			}
+			touchobj=false;
+		},
+		oncancel:function(){
+			touchobj=false;
+		}
+	});
+}
+function searchindex(){
+	changetabs(3);return;
+	dbsite.droptable();
+	alert('删除成功');
+}
+function addindex(){
+	api.actionSheet({
+		title: '选择操作',
+		buttons: ['创建会话','考勤定位']
+	}, function(ret, err){
+		if(ret){
+			var buni=ret.buttonIndex;
+			if(buni==1)createtaolun();
+			if(buni==2)openlocalhost();
+		}
+	});
+}
+function openlocalhost(){
+	js.openurl(''+apiurl+'?d=we&m=ying&a=location&ftype=app');
+}
+var pushparams;
+function tencentPushadd(){
+	var ajpush = api.require('ajpush');
+	ajpush.init(function(ret){});
+	ajpush.bindAliasAndTags({alias:token},function(ret) {});//绑定用户别名和标签
+	ajpush.clearNotification({id:-1},function(ret) {}); //清除状态栏通知
+}
+function createtaolun(){
+	api.prompt({
+		title:'创建会话',
+		msg:'请输入会话名称：',
+		buttons: ['确定', '取消']
+	}, function(ret, err){
+		if(!ret)return;
+		var index = ret.buttonIndex,text = ret.text;
+		if(index==1){
+			if(text){
+				js.ajax('reim','createlun',{val:jm.base64encode(text)}, function(da){
+					if(da.indexOf('success')==0){
+						api.toast({msg:'创建成功'});
+					}else{
+						api.toast({msg:da});
+					}
+				},'none');
+			}
+		}
+	});
+}
+function tencentPushremove(){
+}
+var FNScanner=false;
+function saoyisaokq(){
+	return;
+	if(!FNScanner)FNScanner = api.require('FNScanner');
+	FNScanner.openScanner({
+		autorotation: false
+	}, function(ret, err) {
+		if (ret){
+			if(ret.eventType=='success'){
+				js.msg('msg', '打卡成功');
+			}
+		}else {
+			alert('无法使用');
+		}
+	});	
+}
+function opengroup(){
+	var frames=[{
+		bounces:true,
+		reload:true,
+		vScrollBarEnabled:false,
+		hScrollBarEnabled:false,
+		url: 'html/main_index.html',
+	},{
+		bounces:true,
+		reload:true,
+		vScrollBarEnabled:false,
+		hScrollBarEnabled:false,
+		url: 'html/main_yingyong.html',
+	},{
+		bounces:true,
+		reload:true,
+		vScrollBarEnabled:false,
+		hScrollBarEnabled:false,
+		url: 'html/main_contacts.html',
+	},{
+		bounces:true,
+		reload:true,
+		vScrollBarEnabled:false,
+		hScrollBarEnabled:false,
+		url: 'html/main_my.html',
+	}];
+	var h=45;
+	api.openFrameGroup({
+		name: 'main',
+		frames:frames,
+		rect: {
+			x: 0,
+			y: h,
+			w: 'auto',
+			h: api.winHeight-h-$('footer').height()
+		}
+	}, function(ret, err){
+		if(ret){
+			changetabs(ret.index, true);
+		}
+	});	
+}
+function changetabs(ind, lbo){
+	var anam=[getsystitle(),'应用','联系人','我'];
+	$('#aui-header').html(anam[ind]);
+	$("li[id^='tabbar']").removeClass();
+	$('#tabbar'+ind+'').addClass('active-primary');
+	if(!lbo)api.setFrameGroupIndex({
+		name: 'main',
+		index: ind
+	});
+}
+
+function logincheck(o1){
+	apiurl='http://demo.xh829.com/'; //改成你们自己系统的地址必须以/结尾
+	
+	var d={url:apiurl,user:jm.base64encode(get('user').value),pass:jm.base64encode(get('pass').value)};
+	dbsite.setoption('apiurl', apiurl);
+	js.setoption('apiurl', apiurl);
+	js.ajax('login','check',d,function(a){
+		var tits = a.title;if(!tits)tits='';
+		js.setoption('pass', d.pass);
+		adminid = a.uid;
+		token = a.token;
+		dbsite.setoption('adminid', a.uid);
+		dbsite.setoption('token', a.token);
+		js.setoption('adminid', adminid);
+		js.setoption('token', token);
+		js.setoption('systitle', tits);
+		get('myface').src=a.face;
+		$('#aui-header').html(getsystitle());
+		var userinfo='{"adminid":"'+a.uid+'","name":"'+a.name+'","user":"'+a.user+'","deptname":"'+a.deptname+'","face":"'+a.face+'","ranking":"'+a.ranking+'","apptx":"'+a.apptx+'"}';
+		dbsite.setoption('userinfo', userinfo);
+		js.setoption('adminid', a.uid);
+		clearolddata();
+		initindex();
+	},'mod',function(d){
+		if(d.url=='')return '系统地址不能为空';
+		if(d.user=='')return '用户名不能为空';
+		if(d.pass=='')return '密码不能为空';
+	});
+}
+function clearolddata(){
+	dbsite.getoption('adminoldid', function(s){
+		if(s!=adminid && s!=''){
+			api.setPrefs({'key':'deptjson','value':''});
+			api.setPrefs({'key':'userjson','value':''});
+			api.setPrefs({'key':'groupjson','value':''});
+			dbsite.deletedata('record','', true);
+			dbsite.setoption('minreid', '');
+			dbsite.setoption('maxreid', '');
+		}
+	});
+}
+</script>
+</html>

@@ -1,0 +1,230 @@
+<style>
+.progresscls{height:30px;overflow:hidden;line-height:30px;border:0px #eeeeee solid; position:relative;;width:100%;background-color:#f1f1f1;margin-top:3px}
+.progressclssse{background-color:#B0D6FC;height:30px;overflow:hidden;width:5%;position:absolute;z-index:0;left:0px;top:0px}
+.progressclstext{font-size:10px;color:#0556A8;height:30px;overflow:hidden;line-height:30px;text-align:left;position:absolute;z-index:1;left:5px;top:0px}
+.workheader span{float:left;display:block;padding:0px 10px; border-right:1px #dddddd solid;cursor:pointer;}
+.workheader span:active{background:#e1e1e1}
+</style>
+<script type="text/javascript" src="../script/jquery-rockupload.js"></script>
+<script type="text/javascript" src="../script/jsdownfile.js"></script>
+<div class="workheader" id="workheader" style="line-height:50px;height:50px; background-color:#ffffff;overflow:hidden"><span onclick="wd.clickheadeer(0, this)">我的文档&gt;</span></div>
+<div id="mainbody_show"></div>
+<script type="text/javascript">
+yingyonginit = function(){
+	wd.init();
+	c.getdata=function(lx){
+		if(lx=='create')wd.create();
+		if(lx=='up')wd.up();
+		if(lx=='shate')wd.wfenxx('wfx');
+		if(lx=='fxgw')wd.wfenxx('fxgw');
+	}
+}
+var wd = {
+	typeid:0,
+	init:function(){
+		wd.getfile(0);
+		wd.upobj = $.rockupload({
+			'inputfile' : 'wordupfile',
+			onchange:function(a){
+				wd.onchange(a);
+			},
+			onprogress:function(a,bl){
+				wd.onprogress(a,bl);
+			},
+			onsuccess:function(a,str){
+				wd.onsuccess(a,str);
+			},
+			onerror:function(str){
+				alert(str);
+				$('#progresscls_hehehehsss').remove();
+			}
+		});
+	},
+	onchange:function(a){
+		$('#progresscls_hehehehsss').remove();
+		$('body').append('<div id="progresscls_hehehehsss" style="position:absolute;bottom:10px;" class="progresscls"><div id="progresscls_heheheh" class="progressclssse"></div><div class="progressclstext" id="progresstext_heheheh" >'+a.filename+','+a.filesizecn+'(0%)</div></div>');
+	},
+	onprogress:function(a,per){
+		$('#progresscls_heheheh').css('width',''+per+'%');
+		$('#progresstext_heheheh').html(''+a.filename+','+a.filesizecn+'('+per+'%)');
+	},
+	onsuccess:function(a,str){
+		var f = js.decode(str);
+		$('#progresstext_heheheh').html(''+a.filename+','+a.filesizecn+'，上传成功,保存中...');
+		var fileid = f.id;
+		js.ajax('word','savefile',{typeid:wd.typeid,fileid:fileid},function(a){
+			$('#progresscls_hehehehsss').remove();
+			js.msg('success',''+a.filename+'上传成功');
+			a.fileid=a.id;
+			$('#wordlisttable').append(wd.showlist(a));
+		},'none');
+	},
+	create:function(){
+		api.prompt({
+			'title' : '新建文件夹',
+			msg:'请输入文件夹名称：',
+			buttons: ['确定', '取消']
+		}, function(ret, err) {
+			var index = ret.buttonIndex;
+			var text = ret.text;
+			if(index==1){
+				if(!text){js.msg('msg','没有输入文件夹名称');return;}
+				js.ajax('word','createfolder',{name:text,typeid:wd.typeid},function(a){
+					wd.createshow(a);
+				});
+			}
+		});
+	},
+	createshow:function(a){
+		$('#wordlisttable').append(this.showlist(a));
+	},
+	up:function(){
+		wd.upobj.click();
+	},
+	getfile:function(pid,slx){
+		this.typeid = pid;if(!slx)slx='';
+		js.ajax('word','getfile',{typeid:pid,slx:slx},function(a){
+			wd.data=[];
+			wd.showdata(a);
+		});
+	},
+	showdata:function(a){
+		var i,len=a.length,s;
+		s='<ul class="aui-list-view" id="wordlisttable">';
+		for(i=0;i<len;i++){
+			s+=wd.showlist(a[i]);
+		}
+		s+='</ul>';
+		if(i==0)s='';
+		$('#mainbody_show').html(s);
+	},
+	showlist:function(d){
+		if(!d.name)d.name=d.filename;
+		if(!d.id)d.id=d.fileid;
+		if(!d.fileext)d.fileext='folder';
+		var oi = this.data.push(d),s1='';
+		var s='<li class="aui-list-view-cell" id="'+d.fileext+'_'+d.id+'" onclick="wd.clicksse('+oi+',event,this)">';
+		s+='<table><tr >';
+		s1='<div id="filename_'+oi+'">'+d.name+'</div>';
+		if(d.fileid){
+			s1+='<div style="font-size:12px;color:#888888">大小：'+d.filesizecn+'';
+			if(!isempt(d.shate))s1+='，分享给：'+d.shate+'';
+			s1+='</div>';
+		}
+		if(d.fileext=='folder'){
+			s+='<td align="center" width="40"><img src="../images/folder.png" height="24" width="24"></td><td>'+s1+'</td>';
+		}else{
+			var slx = d.fileext;
+			if(js.fileall.indexOf(','+slx+',')<0)slx='wz';
+			s+='<td align="center" width="40"><img src="images/fileicons/'+slx+'.gif" height="16" width="16"></td><td>'+s1+'</td>';
+		}
+		s+='</tr></table>';
+		s+='</li>';
+		return s;
+	},
+	chentcolor:function(oi,e,o1){
+		if(this._olodwet)$(this._olodwet).css('background','');
+		$(o1).css('background','#f3f3f3');
+		this._olodwet = o1;
+	},
+	clicksse:function(oi,e,o1){
+		this.chentcolor(oi,e,o1);
+		var d = this.data[oi-1];
+		this.tempoi = oi;
+		this.tempda = d;
+		var a = [{name:(d.fileext=='folder')?'打开':'查看',lx:0},{name:'重命名',lx:1}];
+		if(d.fileext=='folder'){
+			if(this.movedata)a.push({name:'['+this.movedata.name+']移动到这',lx:3});
+		}else{
+			a.push({name:'移动',lx:2});
+		}
+		a.push({name:'删除',lx:4});
+		if(d.fileext!='folder'){
+		}
+		js.showmenu({data:a,onclick:function(d){wd.clickmenuss(d)}});
+	},
+	clickmenuss:function(d){
+		var lx=d.lx;
+		if(lx==0)this.celdblckc(this.tempoi);
+		if(lx==1)this.cmmr();
+		if(lx==2)this.movesss();
+		if(lx==3)this.moveokzh();
+		if(lx==4)this.delfload();
+		if(lx==5)this.fenxiang();
+		if(lx==6)this.zhuanfagei();
+	},
+	celdblckc:function(oi){
+		var d = this.data[oi-1];
+		if(d.fileext=='folder'){
+			var s = '<span onclick="wd.clickheadeer('+d.id+', this)">'+d.name+'&gt;</span>';
+			$('#workheader').append(s);
+			this.getfile(d.id);
+		}else{
+			js.openfile(d.fileid, true);
+		}
+	},
+	clickheadeer:function(pid,o1){
+		var as = $('#workheader span');
+		var rb = false;
+		for(var i=0;i<as.length;i++){
+			if(rb)$(as[i]).remove();
+			if(o1==as[i])rb=true;
+		}
+		if(pid==0)changetitle('文档');
+		wd.getfile(pid);
+	},
+	cmmr:function(){
+		api.prompt({
+			title:'重命名',
+			msg:'请输入新的名称：',
+			text:this.tempda.name,
+			buttons: ['确定', '取消']
+		}, function(ret, err) {
+			var index = ret.buttonIndex;
+			var text = ret.text;
+			if(index==1){
+				if(!text){js.msg('msg','没有输入新的名称');return;}
+				if(wd.tempda.name==text)return;
+				wd.data[wd.tempoi-1].name=text;
+				$('#filename_'+wd.tempoi+'').html(text);
+				wd.cmmrssok(text);
+			}
+		});
+	},
+	cmmrssok:function(txt){
+		var d={id:this.tempda.id,type:this.tempda.fileext,name:jm.base64encode(txt)};
+		js.ajax('word','rename',d,function(a){},'none');
+	},
+	movesss:function(){
+		this.movedata = this.tempda;
+	},
+	moveokzh:function(){
+		var d = this.movedata;
+		if(d.typeid==this.tempda.id)return;
+		$('#'+d.fileext+'_'+d.id+'').remove();
+		this.movedata=false;
+		js.ajax('word','movefile',{type:d.fileext,id:d.id,tid:this.tempda.id},function(a){
+			js.msg('success','移动成功');
+		});
+	},
+	delfload:function(){
+		api.confirm({
+			msg:'确定要删除吗？',
+			buttons:['确定','取消']
+		},function(ret){
+			if(ret.buttonIndex==1)wd.delfloadok();
+		});
+	},
+	delfloadok:function(){
+		var d = this.tempda;
+		this.movedata=false;
+		js.ajax('word','delfile',{type:d.fileext,id:d.id},function(a){
+			$('#'+d.fileext+'_'+d.id+'').remove();
+			js.msg('success','删除成功');
+		});
+	},
+	wfenxx:function(lx){
+		this.getfile(this.typeid,lx);
+	}
+};
+</script>

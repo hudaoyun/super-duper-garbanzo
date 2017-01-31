@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="maximum-scale=1.0,minimum-scale=1.0,user-scalable=0,width=device-width,initial-scale=1.0"/>
+<title>APP</title>
+<link rel="stylesheet" type="text/css" href="../css/aui.css" />
+<link rel="stylesheet" type="text/css" href="../css/common.css" />
+<link rel="stylesheet" type="text/css" href="../css/chat.css" />
+<script type="text/javascript" src="../script/jquery.js"></script>
+<script type="text/javascript" src="../script/js.js"></script>
+<script type="text/javascript" src="../script/base64-min.js"></script>
+<script type="text/javascript" src="../script/strformat.js"></script>
+</head>
+<body>
+<div id="listcontent" onclick="location.reload()"></div>
+</body>
+<script type="text/javascript">
+paramstype	= '';
+apiready 	= function () {
+    api.parseTapmode();    
+	params = api.pageParam;
+	api.addEventListener({
+		name: 'chat_'+params.num+''
+	},function(ret, err){
+		im.rece(ret.value);
+	});
+	receiveid = params.uid;
+	paramstype= params.type;
+	dbsite.inits(function(a){
+		im.init(false,0);
+	});
+}
+var im={
+	init:function(clb, wd, lns){
+		dbsite.getdata('record',"and `type`='"+paramstype+"' and `did`='"+receiveid+"' order by `optdt` desc  limit 5",true,function(ret){
+			var a = ret;
+			var i,len = a.length,cont,lex,nas,fase;
+			for(i= len-1; i>=0; i--){
+				lex = 'right';
+				nas = '我';
+				fase= adminface;
+				if(a[i].sendid!=adminid){
+					lex='left';
+					nas= a[i].name;
+					fase= a[i].face;
+				}
+				cont= strformat.showqp(lex,nas,a[i].optdt, jm.base64decode(a[i].content),'', fase);
+				im.addcont(cont);
+			}
+		});
+		
+		return;
+		if(clb&&wd==0)return;
+		js.ajax('reim','getrecord',{gid:receiveid,type:params.type},function(ret){
+			if(!lns)$('#histordiv').remove();
+			receinfor=ret.receinfor;
+			var a = ret.rows;
+			var i,len = a.length,cont,lex,nas,fase;
+			for(i= len-1; i>=0; i--){
+				lex = 'right';
+				nas = '我';
+				fase= adminface;
+				if(a[i].sendid!=adminid){
+					lex='left';
+					nas= a[i].sendname;
+					fase= a[i].face;
+				}
+				cont= strformat.showqp(lex,nas,a[i].optdt, jm.base64decode(a[i].cont),'', fase);
+				im.addcont(cont);
+			}
+			if(len>0 && !lns){
+				var s = '<div id="histordiv" onclick="im.init(true,'+ret.wdtotal+')" style="padding:10px;color:#aaaaaa;font-size:12px" align="center">';
+				if(ret.wdtotal==0){
+					s+='---------↑以上是历史记录---------';
+				}else{
+					s+='---↑以上是历史,还有未读信息'+ret.wdtotal+'条,点击加载---';
+				}
+				s+='</div>';
+				$('#listcontent').append(s);
+			}
+		},'none');
+		/*
+		dbsite.getdata('file','', true,function(d){
+			js.getarr(d[0]);
+		});*/
+	},
+	addcont:function( cont){
+		var o	= $('#listcontent');
+		o.append(cont);
+		clearTimeout(this.scrolltime);
+		this.scrolltime	= setTimeout(function(){
+			$('body,html').animate({scrollTop:get('listcontent').scrollHeight},500)
+		}, 50);
+	},
+	sendcont:function(cont,nsb,oarr){
+		var optdt  = js.serverdt(),nuid= js.now('time');
+		if(!nsb){
+			var str  = strformat.showqp('right','我', optdt ,cont,nuid, adminface);
+			this.addcont(str);
+		}
+		var d 	 = js.apply({gid:receiveid,type:params.type,nuid:nuid,optdt:optdt}, oarr);
+		d.cont=jm.base64encode(cont);
+		js.ajax('reim','sendinfor',d,function(ret){
+			im.sendsuccess(ret);
+		},'none',false,function(){
+			get(nuid).src='images/error.png';
+			get(nuid).title='发送失败';
+		});
+		this.addhistiry(d);
+	},
+	addhistiry:function(d){
+		var a={type:params.type,id:receiveid,name:receinfor.name,face:receinfor.face,stotal:'0',cont:d.cont,optdt:d.optdt};
+		dbsite.adddata('indexchat',"and `type`='"+a.type+"' and `aid`='"+a.id+"'", false, {
+			'type':a.type,
+			'aid':a.id,
+			'name':a.name,
+			'face':a.face,
+			'optdt':a.optdt,
+			'stotal':a.stotal,
+			'content':a.cont
+		}, function(){
+			js.sendevent('reload', 'main_index');
+		});
+	},
+	sendsuccess:function(d){
+		$('#'+d.nuid+'').remove();
+	},
+	receshow:function(d){
+		var str  = strformat.showqp('left',d.sendname, d.optdt , jm.base64decode(d.cont) ,'' , d.face);
+		var id = d.messid;
+		this.addcont(str);
+		js.ajax('reim','yidu',{id:id},false,'none');
+		this.addhistiry(d);
+	},
+	rece:function(d){
+		var lx=d.opttype;
+		if(lx=='send'){
+			this.sendcont(d.cont);
+		}
+		if(lx=='sendpic'){
+			this.sendfile(d);
+		}
+		if(lx=='recechat'){
+			this.receshow(d);
+		}
+		if(lx=='loadrecoed'){
+			im.init(false,0, true);
+		}
+	},
+	upbool:false,
+	sendfile:function(d){
+		if(this.upbool)return;
+		var nuid = js.now('time')
+		var cont = '<div id="abc'+nuid+'" align="center"><img src="images/loading.gif" /><br>文件上传中...</div>';
+		var optdt  = js.serverdt()
+		var str  = strformat.showqp('right','我', optdt ,cont,nuid, adminface);
+		this.addcont(str);
+		this.upfile(d.data, nuid);
+	},
+	upfile:function(path, nuid){
+		this.upbool=true;
+		api.ajax({
+			url: js.apiurl('upload','upfile'),
+			method: 'post',
+			timeout: 60,
+			dataType: 'json',
+			returnAll: false,
+			data: {files:{file:path}}
+		},function(ret,err){
+			im.upbool=false;
+			if(!ret.id){
+				$('#'+nuid+'').html('<font color=red>上传失败</font>');
+				return;
+			}
+			var str='[图片.'+ret.fileext+'.'+ret.id+']';
+			var cont='<img fid="'+ret.id+'" src="'+apiurl+''+ret.thumbpath+'">';
+			$('#abc'+nuid+'').html(cont);
+			js.msg('success','上传成功大小('+ret.filesizecn+')');
+			dbsite.adddata('file',"and aid='"+ret.id+"'", true, {
+				'aid' 	: ret.id,
+				'path' 	: path,
+				'thumbpath' 	: ret.thumbpath,
+				'filepath' 		: ret.filepath,
+				'filesizecn' 	: ret.filesizecn,
+				'name' : ret.filename,
+				'type' : ret.fileext,
+				'optdt': ret.adddt
+			});
+			im.sendcont(str, true,{fileid:ret.id,nuid:nuid});
+		});
+	}
+}
+</script>
+</html>

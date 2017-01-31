@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="maximum-scale=1.0,minimum-scale=1.0,user-scalable=0,width=device-width,initial-scale=1.0"/>
+<title>APP</title>
+<link rel="stylesheet" type="text/css" href="../css/aui.css" />
+<link rel="stylesheet" type="text/css" href="../css/common.css" />
+<script type="text/javascript" src="../script/jquery.js"></script>
+<script type="text/javascript" src="../script/js.js"></script>
+
+</head>
+<style>
+.aui-text-center img{height:40px;width:40px;border-radius:8px}
+.aui-text-center span{position:absolute;top:5px;left:10px}
+.aui-text-center p{color:#000000}
+.yingshright{position:absolute;right:0px;bottom:0px;font-size:12px;color:#cccccc;height:10px;width:10px;display:block; background:url(images/rboot.png)}
+</style>
+<body>
+
+<div class="aui-content">
+<ul id="viewshow" class="aui-grid-nine"></ul>
+</div>
+</body>
+<script type="text/javascript">
+apiready = function(){
+	api.setRefreshHeaderInfo({
+		visible: true,
+		bgColor: '#cccccc',
+		textColor: '#fff',
+		textDown: '下拉刷新',
+		textUp: '松开立即刷新',
+		textLoading: '刷新中...',
+		showTime: false
+	}, function(ret, err){
+		location.reload();
+	});	
+	api.refreshHeaderLoadDone();
+	dbsite.inits(function(a){
+		c.initdata();
+		c.getdata();
+	},true);
+}
+var agentarr=[],agentobj={};
+var c={
+	initdata:function(){
+		api.getPrefs({
+			key: 'agentjson'
+		}, function(ret, err){
+			if(ret){
+				var val=ret.value;
+				if(val!=''){
+					agentarr=js.decode(val);
+					c.showagentall();
+				}
+			}
+		});
+	},
+	getdata:function(){
+		js.ajax('agent','data',{},function(ret){
+			api.refreshHeaderLoadDone();
+			api.setPrefs({'key':'agentjson','value':ret.agentjson});
+			agentarr=js.decode(ret.agentjson);
+			c.showagentall();
+		},'none');
+	},
+	showagentall:function(){
+		var i,len=agentarr.length,a,oi=0,sto='';
+		var  s='';
+		for(i=0;i<len;i++){
+			oi++;
+			sto='';
+			a=agentarr[i];
+			if(a.stotal>0)sto=a.stotal;
+			s+='<li onclick="c.openagent('+a.id+');" class="aui-col-xs-4 aui-text-center">';
+			s+='<span id="stotal_'+a.id+'" class="aui-badge aui-badge-danger">'+sto+'</span>';
+			s+='<img src="'+a.face+'">';
+			s+='<p>'+a.name+'</p>';
+			if(a.totals>0)s+='	<font class="yingshright"></font>';
+			s+='</li>';
+			agentobj[a.id]=a;
+		}
+		$('#viewshow').html(s);
+		c.stotaltj();
+	},
+	stotaltj:function(){
+		var a=$("span[id^='stotal_']"),tj=0,i,val;
+		for(i=0;i<a.length;i++){
+			val=$(a[i]).text();
+			if(val){
+				tj=tj+parseFloat(val);
+			}
+		}
+		js.sendevent('yingtotal','',{stotal:tj});
+	},
+	openagent:function(id){
+		var d=agentobj[id],a=[],i,d1,d2,s2;
+		if(!d)return;
+		if(d.totals>0){
+			d1=d.subagent;
+			for(i=0;i<d1.length;i++){
+				d2=d1[i];
+				agentobj[d2.id]=d2;
+				a.push(d2);
+			}
+			js.showmenu({data:a,align:'left',onclick:function(c1){c.openagent(c1.id)},renderer:function(c1){
+				var s1='&nbsp;<img src="'+c1.face+'" width="30" height="30" align="absmiddle">&nbsp;'+c1.name+'';
+				var ca1=agentobj[c1.id];
+				if(ca1.stotal>0)s1+='&nbsp;<font class="aui-badge aui-badge-danger">'+ca1.stotal+'</font>';
+				return s1;
+			}});
+			return;
+		}
+		var url = d.url;
+		if(isempt(url))return;
+		$('#stotal_'+id+'').html('');
+		if(d.pid>0){
+			var sto=$('#stotal_'+d.pid+''),stos=sto.text();
+			if(stos!='')stos=parseInt(stos)-d.stotal;
+			if(stos<=0)stos='';sto.html(''+stos);
+		}
+		d.stotal=0;
+		c.stotaltj();
+		var url = ''+apiurl+'?d=we&num='+d.num+'&m=ying';
+		//js.openurl(url);
+		openwin(d.name,d.num,d.url,d.id);
+	}
+};
+function openwin(name,num,url,id){
+	api.openWin({
+		name: 'yingyong_'+num+'',
+		url: 'yingyong.html',
+		bounces:false,
+		delay: 200,
+		slidBackEnabled:true,
+		vScrollBarEnabled:false,
+		hScrollBarEnabled:false,
+		pageParam:{
+			num:num,
+			name:name,
+			url:url,id:id
+		}
+	});
+}
+</script>
+</html>

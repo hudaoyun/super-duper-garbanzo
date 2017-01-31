@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="maximum-scale=1.0,minimum-scale=1.0,user-scalable=0,width=device-width,initial-scale=1.0"/>
+<title>APP</title>
+<link rel="stylesheet" type="text/css" href="../css/aui.css" />
+<link rel="stylesheet" type="text/css" href="../css/common.css" />
+<script type="text/javascript" src="../script/jquery.js"></script>
+</head>
+<body>
+
+<div class="aui-content aui-content-padded" id="message-content">
+        <p class="aui-text-center history-date">7-16 20:00</p>
+        <div class="aui-chat-sender">
+            <div class="aui-chat-sender-avatar"><img src="../image/logo.png"></div>
+            <div class="aui-chat-sender-cont">
+                <div class="aui-chat-right-triangle"></div>
+                <span>Hello!!</span>
+            </div>
+        </div>
+        <div class="aui-chat-receiver">
+            <div class="aui-chat-receiver-avatar"><img src="../image/logo.png"></div>
+            <div class="aui-chat-receiver-cont">
+                <div class="aui-chat-left-triangle"></div>
+                <span>你好！</span>
+            </div>
+        </div>
+        <div class="aui-chat-sender">
+            <div class="aui-chat-sender-avatar"><img src="../image/logo.png"></div>
+            <div class="aui-chat-sender-cont">
+                <div class="aui-chat-right-triangle"></div>
+                <span>nice to meet you!</span>
+            </div>
+        </div>
+        <div class="aui-chat-receiver">
+            <div class="aui-chat-receiver-avatar"><img src="../image/logo.png"></div>
+            <div class="aui-chat-receiver-cont">
+                <div class="aui-chat-left-triangle"></div>
+                <span>很高兴见到你！</span>
+            </div>
+        </div>
+        <div class="aui-chat-sender">
+            <div class="aui-chat-sender-avatar"><img src="../image/logo.png"></div>
+            <div class="aui-chat-sender-cont">
+                <div class="aui-chat-right-triangle"></div>
+                <span>如果文字太长了会是什么效果，再多一点再多一点</span>
+            </div>
+        </div>
+        <div class="aui-chat-receiver">
+            <div class="aui-chat-receiver-avatar"><img src="../image/logo.png"></div>
+            <div class="aui-chat-receiver-cont">
+                <div class="aui-chat-left-triangle"></div>
+                <div class="aui-chat-status"><i class="aui-iconfont aui-icon-loading aui-chat-progress"></i></div>
+                <span>如果想自定义气泡颜色，修改aui-chat-receiver-cont背景和aui-chat-left-triangle的border-color</span>
+            </div>
+        </div>
+    </div>
+	
+	
+</body>
+<script type="text/javascript">
+apiready = function(){
+		
+		var UIChatBox = api.require('UIChatBox');
+UIChatBox.open({
+    placeholder: '',
+    maxRows: 4,
+    emotionPath: 'widget://image/emotion',
+    texts: {
+        recordBtn: {
+            normalTitle: '按住 说话',
+            activeTitle: '松开 结束'
+        },
+        sendBtn:{
+            title:'发送'
+        }
+    },
+    styles: {
+        inputBar: {
+            borderColor: '#d9d9d9',
+            bgColor: '#f2f2f2'
+        },
+        inputBox: {
+            borderColor: '#B3B3B3',
+            bgColor: '#FFFFFF',
+			size:12
+        },
+		/*
+        emotionBtn: {
+            normalImg: 'widget://res/img/chatBox_face1.png'
+        },
+        extrasBtn: {
+            normalImg: 'widget://res/img/chatBox_add1.png'
+        },
+        keyboardBtn: {
+            normalImg: 'widget://res/img/chatBox_key1.png'
+        },
+        speechBtn: {
+            normalImg: 'widget://res/img/chatBox_key1.png'
+        },*/
+        recordBtn: {
+            normalBg: '#c4c4c4',
+            activeBg: '#999999',
+            color: '#000',
+            size: 14
+        },
+        indicator: {
+            target: 'both',
+            color: '#c4c4c4',
+            activeColor: '#9e9e9e'
+        },
+        sendBtn: {
+            titleColor: '#ffffff',
+            bg: '#1abc9c' ,
+            activeBg: '#1abc9c',
+            titleSize: 14
+        }
+    },
+    extras: {
+        titleSize: 10,
+        titleColor: '#a3a3a3',
+        btns: [{
+            title: '图片',
+            normalImg: 'widget://res/img/chatBox_album1.png',
+            activeImg: 'widget://res/img/chatBox_album2.png'
+        },{
+            title: '拍照',
+            normalImg: 'widget://res/img/chatBox_cam1.png',
+            activeImg: 'widget://res/img/chatBox_cam2.png'
+        }]
+    }
+}, function(ret, err){
+    if( ret ){
+        // alert( JSON.stringify( ret ) );
+    }else{
+         //alert( JSON.stringify( err ) );
+    }
+});
+		
+}
+</script>
+</html>
